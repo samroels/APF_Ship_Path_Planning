@@ -155,9 +155,9 @@ class Continuous2DEnv(gym.Env):
         #print("First 5 APF obstacle points:\n", self.obstacles[:5])
 
         #Parameters for easy tuning original Repulsive function
-        p_k_att = 2000
+        p_k_att = 5
         p_k_rep = 80
-        p_inf_rad = 280
+        p_inf_rad = 290
         # Parameters for easy tuning inverse-distance-based Repulsive function
         #p_k_att = 100
         #p_k_rep = 1.5

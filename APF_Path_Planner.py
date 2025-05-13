@@ -2,9 +2,24 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def compute_attractive_field(X, Y, goal, k_att):
+#def compute_attractive_field(X, Y, goal, k_att):
+#    d = np.sqrt((X - goal[0]) ** 2 + (Y - goal[1]) ** 2)
+#    return 0.5 * k_att * d #** 2
+# attractive potential where we use a conic well far from the target and a parabolic well closeby
+def compute_attractive_field(X, Y, goal, k_att, d_switch):
     d = np.sqrt((X - goal[0]) ** 2 + (Y - goal[1]) ** 2)
-    return 0.5 * k_att * d #** 2
+
+    U_att = np.zeros_like(d)
+    mask_close = d <= d_switch
+    mask_far = ~mask_close
+
+    # Parabolic component close to goal
+    U_att[mask_close] = 0.5 * k_att * d[mask_close]**2
+
+    # Conic component far from goal
+    U_att[mask_far] = k_att * d_switch * (d[mask_far] - 0.5 * d_switch)
+
+    return U_att
 
 
 def compute_repulsive_field(X, Y, obstacles, k_rep, influence_radius, epsilon=1e-3):
@@ -28,7 +43,7 @@ def compute_repulsive_field(X, Y, obstacles, k_rep, influence_radius, epsilon=1e
 
 
 def compute_total_potential(X, Y, goal, obstacles, k_att, k_rep, influence_radius):
-    U_att = compute_attractive_field(X, Y, goal, k_att)
+    U_att = compute_attractive_field(X, Y, goal, k_att, d_switch=1000.0)
     U_rep = compute_repulsive_field(X, Y, obstacles, k_rep, influence_radius)
     return U_att + U_rep
 
