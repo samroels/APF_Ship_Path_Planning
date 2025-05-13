@@ -208,7 +208,7 @@ class Continuous2DEnv(gym.Env):
                             margin=10
                         )
                         # Check if target is reached (last point of path within threshold)
-                        if np.linalg.norm(path[-1] - self.target_pos) > 50:
+                        if np.linalg.norm(path[-1] - self.target_pos) > 500:
                             continue  # Target isn't reached so skip this combination
 
                         # Target reached so score based on shortest path
@@ -227,7 +227,7 @@ class Continuous2DEnv(gym.Env):
             goal=self.target_pos,
             obstacles=self.obstacles[::5],  # we pass every fifth obstacle point
             alpha=0.3,
-            max_iters=3000,
+            max_iters=2000,
             threshold=1.0,
             k_att=best_params[0],
             k_rep=best_params[1],
