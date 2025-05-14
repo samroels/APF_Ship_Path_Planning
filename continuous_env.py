@@ -153,7 +153,7 @@ class Continuous2DEnv(gym.Env):
         print(f"APF goal = {self.target_pos}")
         #print(f"APF obstacles shape = {self.obstacles.shape}")
         #print("First 5 APF obstacle points:\n", self.obstacles[:5])
-
+        '''
         #Parameters for easy tuning original Repulsive function
         p_k_att = 5
         p_k_rep = 80
@@ -173,6 +173,64 @@ class Continuous2DEnv(gym.Env):
             k_att=p_k_att,
             k_rep=p_k_rep,
             influence_radius=p_inf_rad,
+            momentum_beta=0.8,
+            margin=10
+        )
+        '''
+        # ========= OPTIMIZATION ===============================
+        # score to evaluaute different parameters
+        best_score = float('inf')
+        best_params = None
+
+        # Parameters for easy tuning original Repulsive function
+        k_att_range = range(4, 6, 1)  # [4, 5, 6]
+        k_rep_range = range(70, 91, 10)  # [70, 80, 90]
+        inf_rad_range = range(270, 291, 10)  # [270, 280, 290]
+        for p_k_att in k_att_range:
+            for p_k_rep in k_rep_range:
+                for p_inf_rad in inf_rad_range:
+                    print(f"Trying k_att = {p_k_att}, k_rep = {p_k_rep}, inf_rad = {p_inf_rad}")
+                    try:
+                        # The path is the first return of create_path..., so we only store that value and ignore the rest with *_
+                        path, *_ = create_path_using_apf(
+                            start=self.ship_pos,
+                            goal=self.target_pos,
+                            obstacles=self.obstacles[::5],  # we pass every fifth obstacle point
+                            alpha=0.3,
+                            max_iters=10000,
+                            threshold=1.0,
+                            k_att=p_k_att,
+                            k_rep=p_k_rep,
+                            influence_radius=p_inf_rad,
+                            momentum_beta=0.8,
+                            margin=10
+                        )
+                        # Check if target is reached (last point of path within threshold)
+                        if np.linalg.norm(path[-1] - self.target_pos) > 500:
+                            print("TARGET NOT REACHED")
+                            continue  # Target isn't reached so skip this combination
+
+                        # Target reached so score based on shortest path
+                        score = np.sum(np.linalg.norm(np.diff(path, axis=0), axis=1))
+                        if score < best_score:
+                            best_score = score
+                            best_params = (p_k_att, p_k_rep, p_inf_rad)
+                            print(f"New best score: {best_score}")
+                    except Exception as e:
+                        print(f"Combination failed: {e}")
+        print(f"\nBest parameters: k_att={best_params[0]}, k_rep={best_params[1]}, inf_rad={best_params[2]}")
+        print(f"Score: {best_score:.2f}")
+        # Now we calculate the final path to plot using the best parameters
+        path, *_ = create_path_using_apf(
+            start=self.ship_pos,
+            goal=self.target_pos,
+            obstacles=self.obstacles[::5],  # we pass every fifth obstacle point
+            alpha=0.3,
+            max_iters=2000,
+            threshold=1.0,
+            k_att=best_params[0],
+            k_rep=best_params[1],
+            influence_radius=best_params[2],
             momentum_beta=0.8,
             margin=10
         )
