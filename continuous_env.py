@@ -140,14 +140,14 @@ class Continuous2DEnv(gym.Env):
         #self.target_pos = [2500, 1600] # goal around a corner to test
         #self.target_pos = [2000, 6500] # Next milestone closer to real goal
 
-        """
+
         # Path and checkpoints initialization
         try:
             path = np.loadtxt(os.path.join(csv_input_dir, 'trajectory_points_no_scale.csv'), delimiter=',',
                               skiprows=1)
         except FileNotFoundError:
-            raise FileNotFoundError("The file 'trajectory_points_no_scale.csv' could not be found.")"""
-
+            raise FileNotFoundError("The file 'trajectory_points_no_scale.csv' could not be found.")
+        '''
         #DEBUG
         print(f"APF start = {self.ship_pos}")
         print(f"APF goal = {self.target_pos}")
@@ -176,10 +176,10 @@ class Continuous2DEnv(gym.Env):
             momentum_beta=0.8,
             margin=10
         )
-
+        '''
         path = create_checkpoints_from_simple_path(path, self.CHECKPOINTS_DISTANCE)
         checkpoints = [{'pos': np.array(point, dtype=np.float32), 'radius': 1.0} for point in path]
-
+        '''
         # DEBUG
         if len(checkpoints) < 2:
             raise ValueError(
@@ -205,7 +205,7 @@ class Continuous2DEnv(gym.Env):
             plt.show
 
         plot_potential_debug(self, self.ship_pos, self.target_pos)
-
+        '''
         # Calculate perpendicular lines
         lines = calculate_perpendicular_lines(checkpoints, 10)
         self.checkpoints = [
