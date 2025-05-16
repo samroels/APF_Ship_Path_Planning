@@ -384,7 +384,9 @@ def evaluate_trained_agent(checkpoint_path, num_episodes=3):
     # Create a figure with two subplots
     #fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 16))
     # changed the plot so the path plot is bigger than the error plot
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12), gridspec_kw={'height_ratios': [3, 1]})
+    #fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12), gridspec_kw={'height_ratios': [3, 1]})
+    #changed this so only the path plot is shown
+    fig, ax1 = plt.subplots(1, 1, figsize=(12, 8))
 
     # Plot paths in the first subplot
     # Create hashed pattern for the area between obstacles and Western Scheldt
@@ -463,7 +465,7 @@ def evaluate_trained_agent(checkpoint_path, num_episodes=3):
     ax1.legend(loc='upper left')
     ax1.grid(True)
     ax1.axis('equal')
-    
+    ''' COMMENTED THIS OUT TO ONLY SHOW PATH PLOT
     errors = all_cross_errors[0]  # Take only the first episode's errors
     timesteps = np.arange(len(errors))
     ax2.plot(timesteps, errors, '-', 
@@ -475,7 +477,7 @@ def evaluate_trained_agent(checkpoint_path, num_episodes=3):
     ax2.set_ylabel('Cross-Track Error')
     ax2.legend(loc='upper right')
     ax2.grid(True)
-    
+    '''
     # Adjust layout and save
     plt.show()
     plt.tight_layout()
