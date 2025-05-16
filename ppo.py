@@ -322,7 +322,8 @@ def evaluate_trained_agent(checkpoint_path, num_episodes=3):
         ship_pos=ship_pos,
         target_pos=target_pos,
     )
-    
+
+    ''' ================ DISABLED PPO FOLLOWING AGENT BECAUSE NOT WORKING ===================== 
     # Initialize agent
     agent = ShipPPOAgent(env)
     
@@ -332,12 +333,12 @@ def evaluate_trained_agent(checkpoint_path, num_episodes=3):
     agent.network.eval()
     
     print(f"\nRunning {num_episodes} episodes...")
-    
+    '''
     # Store results for each episode
     all_paths = []
     total_rewards = []
     all_cross_errors = []  # Store cross-track errors for each episode
-    
+    '''
     for episode in range(num_episodes):
         state, _ = env.reset()
         episode_reward = 0
@@ -380,12 +381,12 @@ def evaluate_trained_agent(checkpoint_path, num_episodes=3):
     print(f"Average reward: {avg_reward:.2f}")
     print(f"Best episode reward: {max(total_rewards):.2f}")
     print(f"Worst episode reward: {min(total_rewards):.2f}")
-    
+    '''
     # Create a figure with two subplots
     #fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 16))
-    # changed the plot so the path plot is bigger than the error plot
+    # ====changed the plot so the path plot is bigger than the error plot=====
     #fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 12), gridspec_kw={'height_ratios': [3, 1]})
-    #changed this so only the path plot is shown
+    #===============changed this so only the path plot is shown===========
     fig, ax1 = plt.subplots(1, 1, figsize=(12, 8))
 
     # Plot paths in the first subplot
