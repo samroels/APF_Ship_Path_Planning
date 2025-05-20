@@ -1,6 +1,6 @@
 import matplotlib
 
-from APF_Path_Planner import create_path_using_apf, compute_total_potential
+from APF_Path_Planner import create_path_using_apf, total_potential
 
 matplotlib.use('TkAgg')
 import tkinter as tk
@@ -135,11 +135,6 @@ class Continuous2DEnv(gym.Env):
         except FileNotFoundError:
             raise FileNotFoundError("The file 'trajectory_points_no_scale.csv' could not be found.")
 
-        # Milestone to test APF implementation for easier goal
-        #self.target_pos = [3500, 2500] # First milestone
-        #self.target_pos = [2500, 1600] # goal around a corner to test
-        #self.target_pos = [2000, 6500] # Next milestone closer to real goal
-
         """
         # Path and checkpoints initialization
         try:
@@ -148,20 +143,71 @@ class Continuous2DEnv(gym.Env):
         except FileNotFoundError:
             raise FileNotFoundError("The file 'trajectory_points_no_scale.csv' could not be found.")"""
 
-        #DEBUG
+        # Start and goal positions
         print(f"APF start = {self.ship_pos}")
         print(f"APF goal = {self.target_pos}")
-        #print(f"APF obstacles shape = {self.obstacles.shape}")
-        #print("First 5 APF obstacle points:\n", self.obstacles[:5])
 
-        #Parameters for easy tuning original Repulsive function
+        '''# ========= OPTIMIZATION ===============================
+        # score to evaluaute different parameters
+        best_score = float('inf')
+        best_params = None
+
+        # Parameters for easy tuning
+        k_att_range = range(1950, 2051, 50)       # [1950, 2000, 2500]
+        k_rep_range = range(70, 91, 10)           # [70, 80, 90]
+        inf_rad_range = range(270, 291, 10)       # [270, 280, 290]
+        for p_k_att in k_att_range:
+            for p_k_rep in k_rep_range:
+                for p_inf_rad in inf_rad_range:
+                    print(f"Trying k_att = {p_k_att}, k_rep = {p_k_rep}, inf_rad = {p_inf_rad}")
+                    try:
+                        # The path is the first return of create_path..., so we only store that value and ignore the rest with *_
+                        path, *_ = create_path_using_apf(
+                            start=self.ship_pos,
+                            goal=self.target_pos,
+                            obstacles=self.obstacles[::5],  # we pass every fifth obstacle point
+                            alpha=0.3,
+                            max_iters=3000,
+                            threshold=1.0,
+                            k_att=p_k_att,
+                            k_rep=p_k_rep,
+                            influence_radius=p_inf_rad,
+                            momentum_beta=0.8,
+                            margin=10
+                        )
+                        # Check if target is reached (last point of path within threshold)
+                        if np.linalg.norm(path[-1] - self.target_pos) > 500:
+                            continue  # Target isn't reached so skip this combination
+
+                        # Target reached so score based on shortest path
+                        score = np.sum(np.linalg.norm(np.diff(path, axis=0), axis=1))
+                        if score<best_score:
+                            best_score = score
+                            best_params = (p_k_att, p_k_rep, p_inf_rad)
+                            print(f"New best score: {best_score}")
+                    except Exception as e:
+                        print(f"Combination failed: {e}")
+        print(f"\nBest parameters: k_att={best_params[0]}, k_rep={best_params[1]}, inf_rad={best_params[2]}")
+        print(f"Score: {best_score:.2f}")
+        # Now we calculate the final path to plot using the best parameters
+        path, *_ = create_path_using_apf(
+            start=self.ship_pos,
+            goal=self.target_pos,
+            obstacles=self.obstacles[::5],  # we pass every fifth obstacle point
+            alpha=0.3,
+            max_iters=2000,
+            threshold=1.0,
+            k_att=best_params[0],
+            k_rep=best_params[1],
+            influence_radius=best_params[2],
+            momentum_beta=0.8,
+            margin=10
+        )'''
+        #Parameters for easy tuning
         p_k_att = 2000
         p_k_rep = 80
         p_inf_rad = 290
-        # Parameters for easy tuning inverse-distance-based Repulsive function
-        #p_k_att = 100
-        #p_k_rep = 1.5
-        #p_inf_rad = 50
+
         # The path is the first return of create_path..., so we only store that value and discard the rest with *_
         path, *_ = create_path_using_apf(
             start=self.ship_pos,
@@ -180,18 +226,19 @@ class Continuous2DEnv(gym.Env):
         path = create_checkpoints_from_simple_path(path, self.CHECKPOINTS_DISTANCE)
         checkpoints = [{'pos': np.array(point, dtype=np.float32), 'radius': 1.0} for point in path]
 
-        # DEBUG
+        # check that the path is not (almost) empty
         if len(checkpoints) < 2:
             raise ValueError(
                 "APF path produced fewer than 2 checkpoints.")
 
+        # plot potential field for debugging
         def plot_potential_debug(self, start, goal):
             all_points = np.vstack((self.obstacles, start, goal))
             margin = 500
             x_range = np.arange(all_points[:, 0].min() - margin, all_points[:, 0].max() + margin, 50)
             y_range = np.arange(all_points[:, 1].min() - margin, all_points[:, 1].max() + margin, 50)
             X, Y = np.meshgrid(x_range, y_range)
-            U_total = compute_total_potential(X, Y, goal, self.obstacles, k_att=p_k_att, k_rep=p_k_rep, influence_radius=p_inf_rad)
+            U_total = total_potential(X, Y, goal, self.obstacles, k_att=p_k_att, k_rep=p_k_rep, influence_radius=p_inf_rad)
             plt.figure(figsize=(10, 6))
             plt.contourf(X, Y, np.log1p(U_total), levels=100, cmap='plasma')
             plt.colorbar(label='Total Potential')
@@ -256,37 +303,7 @@ class Continuous2DEnv(gym.Env):
         except FileNotFoundError:
             raise FileNotFoundError("The file 'env_Sche_no_scale.csv' could not be found.")
 
-    """
-    # Update def that also densifies the polygon points to get more wall points as obstacles
-    def _load_obstacles_and_paths(self, csv_input_dir):
-        # Load obstacle and path data from CSV files.
-        try:
-            raw_obstacles = np.loadtxt(os.path.join(csv_input_dir, 'env_Sche_250cm_no_scale.csv'), delimiter=',',
-                                       skiprows=1).reshape(-1, 2)
-            self.polygon_shape = Polygon(raw_obstacles)
-            # Densify polygon edges for APF
-            self.obstacles = densify_polygon_edges(raw_obstacles, spacing=10)
-            print(f"Original obstacle points: {raw_obstacles.shape[0]}")
-            print(f"Densified obstacle points: {self.obstacles.shape[0]}")
 
-            # DEBUG VISUAL CHECK
-            plt.figure(figsize=(12, 6))
-            plt.plot(raw_obstacles[:, 0], raw_obstacles[:, 1], 'k-',markersize=5, label="Original Polygon")
-            plt.scatter(raw_obstacles[:, 0], raw_obstacles[:, 1], c='red', s=5, label="Raw Obstacles")
-            plt.legend()
-            plt.title("Densified Obstacle Points Check")
-            plt.axis("equal")
-            plt.grid(True)
-
-        except FileNotFoundError:
-            raise FileNotFoundError("The file 'env_Sche_250cm_no_scale.csv' could not be found.")
-
-        try:
-            self.overall = np.loadtxt(os.path.join(csv_input_dir, 'env_Sche_no_scale.csv'), delimiter=',',
-                                      skiprows=1).reshape(-1, 2)
-        except FileNotFoundError:
-            raise FileNotFoundError("The file 'env_Sche_no_scale.csv' could not be found.")
-            """
     def _initialize_observation_space(self):
         """
         Observation space for path-following:
@@ -721,7 +738,7 @@ class Continuous2DEnv(gym.Env):
         y_range = np.arange(self.ship_pos[1] - margin, self.target_pos[1] + margin, step)
         X, Y = np.meshgrid(x_range, y_range)
 
-        U_total = compute_total_potential(
+        U_total = total_potential(
             X, Y, self.target_pos, self.obstacles[::10],
             k_att=1.0, k_rep=0.15, influence_radius=0.0011
         )

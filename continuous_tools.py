@@ -110,24 +110,3 @@ def check_collision_ship(ship_position, polygon):
         return True
     return False
 
-"""
-def densify_polygon_edges(points, spacing=None):
-
-    #Given a set of 2D polygon points, return a densified set of points by interpolating
-    #along the edges of the polygon with a fixed spacing.
-
-    densified = []
-
-    for i in range(len(points)):
-        p1 = points[i]
-        p2 = points[(i + 1) % len(points)]  # Loop back to the first point
-        edge = p2 - p1
-        length = np.linalg.norm(edge)
-        num_points = max(int(np.ceil(length / spacing)), 1)
-        for j in range(num_points):
-            t = j / num_points
-            interp = (1 - t) * p1 + t * p2
-            densified.append(interp)
-
-    return np.array(densified)
-"""
